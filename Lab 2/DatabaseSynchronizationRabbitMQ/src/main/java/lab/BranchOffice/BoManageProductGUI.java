@@ -1,3 +1,5 @@
+package lab.BranchOffice;
+
 import lab.*;
 
 import javax.swing.*;

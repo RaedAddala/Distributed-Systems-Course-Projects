@@ -1,3 +1,5 @@
+package lab.HeadOffice;
+
 import lab.*;
 
 import com.rabbitmq.client.Channel;
