@@ -1,0 +1,50 @@
+services:
+  rabbit_mq:
+    # rabbitmq image with web interface enabled through port 15672
+    # on the alpine linux (small kernel compared to the other versions)
+    image: rabbitmq:management-alpine
+    container_name: rabbit_mq
+    ports:
+        - '5672:5672'
+        - '15672:15672'
+    volumes:
+      - data:/usr/share/rabbitmq/data
+      
+  # produces container builds the producer image
+  # and produces message to the queue
+  producer:
+    build: message_producer
+    depends_on:
+        - rabbit_mq
+    environment:
+        AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
+        QUEUE_NAME: 'Hello World'
+    volumes:
+      - ./message_producer:/usr/src/app/producer
+
+  # consumer container builds the consumer image
+  # and consumes messages from the queue
+
+  # we spawn 2 consumer containers to run parallely
+  # on the same queue
+  consumer1:
+    build: message_consumer
+    depends_on:
+        - rabbit_mq
+    environment:
+        AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
+        QUEUE_NAME: 'Hello World'
+    volumes:
+      - ./message_consumer:/usr/src/app/consumer
+  consumer2:
+    build: message_consumer
+    depends_on:
+        - rabbit_mq
+    environment:
+        AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
+        QUEUE_NAME: 'Hello World'
+    volumes:
+      - ./message_consumer:/usr/src/app/consumer
+volumes:
+    data:
+      driver: local
