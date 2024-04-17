@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mysql:oracle
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'product'
+      # So you don't have to use root, but you can if you like
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'passroot'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - my-db:/var/lib/mysql
+
+  rabbit_mq:
+    # rabbitmq image with web interface enabled through port 15672
+    # on the alpine linux (small kernel compared to the other versions)
+    image: rabbitmq:management-alpine
+    container_name: rabbit_mq
+    ports:
+        - '5672:5672'
+        - '15672:15672'
+    volumes:
+      - data:/usr/share/rabbitmq/data
+
+volumes:
+  my-db:
+  
+  data:
+    driver: local
