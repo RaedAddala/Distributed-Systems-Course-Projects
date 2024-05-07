@@ -40,3 +40,7 @@ For RabbitMQ Dashboard, access through: <http://localhost:15672/>
 - `docker-compose up` to start all images and run the MySQL Server and the RabbitMQ Server
 - `docker-compose up <SERVICE-NAME>` to start only the desired image
 - `docker-compose down -v --rmi all --remove-orphans` to close the images and clean things up
+
+- in the Docker Desktop MySQL image, in order to connect to mysql shell use this: `mysql -u USERNAME -p`.
+- in order to see all databases `SHOW DATABASES;`.
+- in order to use one particular database: `USE database_name;`.

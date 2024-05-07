@@ -1,8 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from gui import MainWindow  
-from common.database import initialize_database
-from common.gui import cleanup
+from common.database import initialize_database,close_database
 
 def main():
     app = QApplication(sys.argv)

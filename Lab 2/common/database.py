@@ -9,24 +9,24 @@ DATABASE_URI = "mysql+pymysql://user:password@localhost/"
 def initialize_database():
     """Create a new database with a unique name, create tables, and populate with initial data."""
     db_name = f"product_sales_{uuid.uuid4().hex[:8]}"
-    try:
-        engine = create_engine(f"{DATABASE_URI}{db_name}")
-        session = get_session(engine)
-    except SQLAlchemyError as e:
-        print(f"Error initialising engine and session: {e}")
+    engine = create_engine(f"{DATABASE_URI}{db_name}")
+    session = get_session(engine)
+    if not session:
+        engine.dispose()
         return None, None, None
     try:
         create_tables(session)
         populate_initial_data(session)
     except SQLAlchemyError as e:
-        print(f"Error creating tables: {e}")
+        print(f"Error during table creation or data population: {e}")
         session.rollback()
-        session.close_all()
+        session.close()
         engine.dispose()
         return None, None, None
     return db_name, engine, session
 
 def get_session(engine):
+    """Create a database session."""
     Session = sessionmaker(bind=engine)
     return Session()
 
@@ -54,12 +54,8 @@ def create_tables(session):
 
 def populate_initial_data(session):
     """Populate the sales table with random initial data."""
-    products = [
-        ('Paper', 12.95),
-        ('Pens', 2.19),
-        ('Staples', 5.00)
-    ]
-    for _ in range(10):  # Generate 10 entries
+    products = [('Paper', 12.95), ('Pens', 2.19), ('Staples', 5.00)]
+    for _ in range(10):
         date = f"2024-04-{random.randint(1, 30):02d}"
         region = random.choice(['East', 'West', 'North', 'South'])
         product, base_price = random.choice(products)
@@ -68,13 +64,15 @@ def populate_initial_data(session):
         amount = round(cost * qty, 2)
         tax = round(amount * 0.07, 2)
         total = round(amount + tax, 2)
-        command = f"INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES ({date}, {region}, {product}, {qty}, {cost}, {amount}, {tax}, {total})"
         try:
-            session.execute(command)
+            session.execute(
+                "INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:date, :region, :product, :qty, :cost, :amount, :tax, :total)",
+                {'date': date, 'region': region, 'product': product, 'qty': qty, 'cost': cost, 'amount': amount, 'tax': tax, 'total': total})
             session.commit()
         except SQLAlchemyError as e:
             session.rollback()
             print(f"Error inserting data: {e}")
+
 
 def insert_data(session, date, region, product, qty, cost, amount, tax, total):
     """Inserting new data to the table"""
