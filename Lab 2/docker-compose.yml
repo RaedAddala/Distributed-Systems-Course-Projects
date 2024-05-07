@@ -1,6 +1,6 @@
 services:
   db:
-    image: mysql:oracle
+    image: mysql:8.0-oracle
     restart: always
     environment:
       MYSQL_DATABASE: 'product'
@@ -18,7 +18,7 @@ services:
   rabbit_mq:
     # rabbitmq image with web interface enabled through port 15672
     # on the alpine linux (small kernel compared to the other versions)
-    image: rabbitmq:management-alpine
+    image: rabbitmq:3.12-management-alpine
     container_name: rabbit_mq
     ports:
         - '5672:5672'

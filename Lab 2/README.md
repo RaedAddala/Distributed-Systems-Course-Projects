@@ -2,7 +2,7 @@
 
 This is a ***Distributed Database Synchronization using RabbitMQ***.
 
-Done using **RabbitMQ**, **MySQL**, **Docker**, **Java**, **Java Swing** and **Maven**.
+Done using **RabbitMQ**, **MySQL**, **Docker**, **Python**, **PyQT5** and **Pika**.
 
 ## Description
 
