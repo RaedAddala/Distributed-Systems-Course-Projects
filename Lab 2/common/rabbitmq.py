@@ -36,15 +36,28 @@ def send_message(channel, queue_name, data):
 def receive_messages(channel, queue_name, session, update_gui_callback):
     """Start consuming messages from a specified queue and handle data."""
     def callback(ch, method, properties, body):
-        response = process_message(session, body)
-        update_gui_callback(response)  # Update the GUI with the response message
+        data = json.loads(body.decode('utf-8'))  # Assuming the message is JSON formatted
+        insert_data(session, **data)  # Insert the data into the database
+        message = f"Received and stored data: {data}"
+        update_gui_callback(message)  # Update the GUI with the processed data
 
     try:
         channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-        print("Starting message consumption.")
         channel.start_consuming()
     except AMQPError as e:
         print(f"Failed to receive messages from {queue_name}: {e}")
+        
+def insert_data(session, **data):
+    try:
+        command = """
+        INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
+        VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)
+        """
+        session.execute(command, data)
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"Database error: {e}")
 
 def process_message(session, body):
     """Process incoming message and insert into the local database."""
