@@ -18,18 +18,30 @@ def main():
         print("Failed to initialize database.")
         sys.exit(-1)
     
-    connection, channel = create_connection()
+    try:
+        connection, channel = create_connection()
+    except Exception as err:
+        print(f"Error establishing RabbitMQ connection: {err}")
+        sys.exit(-1)    
+    
     if not connection or not channel:
         print("Failed to establish RabbitMQ connection.")
         sys.exit(-1)
     
-    window = MainWindow(session, channel)
-    window.setWindowTitle(f"Head Office - {db_name}")
-    window.show()
-    app.aboutToQuit.connect(lambda: cleanup(window, session, engine, connection))
+    print("jusqu'a ici tout va bien")
     
-    result = app.exec_()
-    sys.exit(result)
+    try:
+        window = MainWindow(session, channel, f"Head Office - {db_name}")
+        window.show()
+    except Exception as err:
+        print(f"Error during GUI initialization: {err}")
+        sys.exit(-1)
+    
+    print("parfaitement bien")
+
+    app.aboutToQuit.connect(lambda: cleanup(window, session, engine, connection))
+
+    sys.exit(app.exec_())
 
 def cleanup(window, session, engine, connection):
     window.cleanup()

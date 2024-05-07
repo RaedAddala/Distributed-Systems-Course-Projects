@@ -1,20 +1,49 @@
 import sys
+
+sys.path.insert(0, '../')
+
 from PyQt5.QtWidgets import QApplication
 from gui import MainWindow
-from common.database import initialize_database
+from common.database import initialize_database, close_database
+from common.rabbitmq import create_connection, close_connection
 
 def main():
     app = QApplication(sys.argv)
-    db_name = initialize_database()  # Create and connect to a new database
-    window = MainWindow()
-    window.setWindowTitle(f"Base Office - {db_name}")
-    
-    # Connect the cleanup function to the aboutToQuit signal
-    app.aboutToQuit.connect(cleanup)
+    try:
+        db_name, engine, session = initialize_database()
+    except Exception as err:
+        print(f"Error initializing database: {err}")
+        sys.exit(-1)
 
-    window.show()
+    if not engine or not session:
+        print("Failed to initialize database.")
+        sys.exit(-1)
 
-    app.exec_()
+    try:
+        connection, channel = create_connection()
+    except Exception as err:
+        print(f"Error establishing RabbitMQ connection: {err}")
+        sys.exit(-1)
     
+    if not connection or not channel:
+        print("Failed to establish RabbitMQ connection.")
+        sys.exit(-1)
+
+    try:
+        window = MainWindow(session, channel, f"Base Office - {db_name}")
+        window.show()
+    except Exception as err:
+        print(f"Error during GUI initialization: {err}")
+        sys.exit(-1)
+
+    app.aboutToQuit.connect(lambda: cleanup(window, session, engine, connection))
+    sys.exit(app.exec_())
+
+def cleanup(window, session, engine, connection):
+    window.cleanup()
+    session.close()
+    close_database(engine)
+    close_connection(connection)
+
 if __name__ == "__main__":
     main()
