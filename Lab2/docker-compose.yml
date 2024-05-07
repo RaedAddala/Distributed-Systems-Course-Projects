@@ -3,11 +3,10 @@ services:
     image: mysql:8.0-oracle
     restart: always
     environment:
-      MYSQL_DATABASE: 'product'
       # So you don't have to use root, but you can if you like
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: 'password'
-      MYSQL_ROOT_PASSWORD: 'passroot'
+      MYSQL_ROOT_PASSWORD: rootpassword
     ports:
       - '3306:3306'
     expose:
@@ -28,6 +27,5 @@ services:
 
 volumes:
   my-db:
-  
   data:
     driver: local

@@ -2,13 +2,23 @@ import random
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+
 import uuid
 
-DATABASE_URI = "mysql+pymysql://user:password@localhost/"
+DATABASE_URI = "mysql+pymysql://root:rootpassword@localhost/"
 
 def initialize_database():
     """Create a new database with a unique name, create tables, and populate with initial data."""
     db_name = f"product_sales_{uuid.uuid4().hex[:8]}"
+    engine = create_engine(f"{DATABASE_URI}")  # Connect without specifying the database
+    conn = engine.connect()
+    
+    # Attempt to create the database if it doesn't exist
+    conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name}"))
+    conn.close()  # Close the connection to the default database
+
+    # Reconnect with the new database
     engine = create_engine(f"{DATABASE_URI}{db_name}")
     session = get_session(engine)
     if not session:
@@ -32,7 +42,7 @@ def get_session(engine):
 
 def create_tables(session):
     """Create the sales table in the database."""
-    create_table_command = """
+    create_table_command =text("""
     CREATE TABLE sales (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         Date DATE,
@@ -44,13 +54,13 @@ def create_tables(session):
         Tax DECIMAL(10, 2),
         Total DECIMAL(10, 2)
     );
-    """
+    """)
     try:
         session.execute(create_table_command)
         session.commit()
     except SQLAlchemyError as e:
-        session.rollback()
         print(f"Error creating tables: {e}")
+        session.rollback()
 
 def populate_initial_data(session):
     """Populate the sales table with random initial data."""
@@ -66,7 +76,7 @@ def populate_initial_data(session):
         total = round(amount + tax, 2)
         try:
             session.execute(
-                "INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:date, :region, :product, :qty, :cost, :amount, :tax, :total)",
+                text("INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:date, :region, :product, :qty, :cost, :amount, :tax, :total)"),
                 {'date': date, 'region': region, 'product': product, 'qty': qty, 'cost': cost, 'amount': amount, 'tax': tax, 'total': total})
             session.commit()
         except SQLAlchemyError as e:
@@ -77,8 +87,11 @@ def populate_initial_data(session):
 def insert_data(session, date, region, product, qty, cost, amount, tax, total):
     """Inserting new data to the table"""
     try:
-        command = f"INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES ({date}, {region}, {product}, {qty}, {cost}, {amount}, {tax}, {total})"
-        session.execute(command)
+        command = text("""
+        INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
+        VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)
+        """)
+        session.execute(command,{'date': date, 'region': region, 'product': product, 'qty': qty, 'cost': cost, 'amount': amount, 'tax': tax, 'total': total})
         session.commit()
     except SQLAlchemyError as e:
         session.rollback()
@@ -87,7 +100,7 @@ def insert_data(session, date, region, product, qty, cost, amount, tax, total):
 def get_data(session):
     """Getting all data from the table"""
     try:
-        command = "SELECT * FROM sales"
+        command = text("SELECT * FROM sales")
         result = session.execute(command)
         return result.fetchall()
     except SQLAlchemyError as e:

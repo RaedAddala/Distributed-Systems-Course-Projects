@@ -1,0 +1,5 @@
+PyQt5
+pika
+PyMySQL
+SQLAlchemy
+cryptography
