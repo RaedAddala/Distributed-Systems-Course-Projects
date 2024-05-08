@@ -1,9 +1,12 @@
 from PyQt5.QtWidgets import QMainWindow, QTextEdit, QVBoxLayout, QWidget, QPushButton, QLineEdit, QLabel, QFormLayout, QDateEdit
-from PyQt5.QtCore import QDate
+from PyQt5.QtCore import QDate, pyqtSignal, QObject
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from common.database import insert_data
 from common.rabbitmq import send_message, setup_common_queue, receive_messages
 import random
+
+class Worker(QObject):
+    message_received = pyqtSignal(str)  # Custom signal to handle string messages // to prevent race conditions when working with threads
 
 class MainWindow(QMainWindow):
     def __init__(self, session, channel, title):
@@ -11,6 +14,9 @@ class MainWindow(QMainWindow):
         self.session = session
         self.channel = channel
         self.title = title
+        self.worker = Worker()  # Worker object to handle background tasks
+        self.worker.message_received.connect(self.update_display)  # Connect signal to slot
+        
         self.initUI()
 
     def initUI(self):
@@ -73,7 +79,7 @@ class MainWindow(QMainWindow):
 
         # Setup RabbitMQ listening for incoming data
         setup_common_queue(self.channel, 'common_queue')
-        receive_messages(self.channel, 'common_queue', self.session, self.update_display)
+        receive_messages(self.channel, 'common_queue', self.session, self.worker.message_received.emit)
 
 
     def fill_random_data(self):

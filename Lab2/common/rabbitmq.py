@@ -3,6 +3,7 @@ import json
 import pika
 from pika.exceptions import AMQPError
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
 
 def create_connection():
     """Create and return a RabbitMQ connection and channel."""
@@ -39,14 +40,15 @@ def receive_messages(channel, queue_name, session, update_gui_callback):
     """Start consuming messages from a specified queue and handle data in a separate thread."""
     def callback(ch, method, properties, body):
         try:
-            data = json.loads(body.decode('utf-8'))  # Assuming the message is JSON formatted
-            insert_data(session, **data)  # Insert the data into the database
-            message = f"Received and stored data: {data}"
+            # Insert the data into the database
+            message = process_message(session,body)
             update_gui_callback(message)  # Update the GUI with the processed data
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON: {e}")
         except SQLAlchemyError as e:
             print(f"Database error during insertion: {e}")
+        except Exception as e:
+            print(f"ERROR: {e}")
 
     def start_consuming():
         try:
@@ -63,10 +65,10 @@ def receive_messages(channel, queue_name, session, update_gui_callback):
             
 def insert_data(session, **data):
     try:
-        command = """
+        command = text("""
         INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
         VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)
-        """
+        """)
         session.execute(command, data)
         session.commit()
     except SQLAlchemyError as e:
@@ -77,10 +79,10 @@ def process_message(session, body):
     """Process incoming message and insert into the local database."""
     try:
         data = json.loads(body.decode('utf-8'))
-        command = """
+        command = text("""
         INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
         VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)
-        """
+        """)
         session.execute(command, data)
         session.commit()
         return f"Data inserted: {data}"

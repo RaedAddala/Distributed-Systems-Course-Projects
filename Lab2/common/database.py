@@ -5,7 +5,7 @@ sys.path.insert(0, '.')
 import random
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import text
 
 from common.rabbitmq import send_message
@@ -14,10 +14,15 @@ import uuid
 
 DATABASE_URI = "mysql+pymysql://root:rootpassword@localhost/"
 
+def get_engine(database=None):
+    """Create and return an SQLAlchemy engine."""
+    database_uri = f"{DATABASE_URI}{database}" if database else DATABASE_URI
+    return create_engine(database_uri, echo=True, pool_pre_ping=True)
+
 def initialize_database():
     """Create a new database with a unique name, create tables, and populate with initial data."""
     db_name = f"product_sales_{uuid.uuid4().hex[:8]}"
-    engine = create_engine(f"{DATABASE_URI}")  # Connect without specifying the database
+    engine = get_engine()  # Connect without specifying the database
     conn = engine.connect()
     
     # Attempt to create the database if it doesn't exist
@@ -25,8 +30,10 @@ def initialize_database():
     conn.close()  # Close the connection to the default database
 
     # Reconnect with the new database
-    engine = create_engine(f"{DATABASE_URI}{db_name}")
-    session = get_session(engine)
+    engine = get_engine(db_name)
+    Session = scoped_session(sessionmaker(bind=engine))
+    session = Session()
+    
     if not session:
         engine.dispose()
         return None, None, None
@@ -38,12 +45,8 @@ def initialize_database():
         session.close()
         engine.dispose()
         return None, None, None
-    return db_name, engine, session
+    return db_name, engine, Session
 
-def get_session(engine):
-    """Create a database session."""
-    Session = sessionmaker(bind=engine)
-    return Session()
 
 def create_tables(session):
     """Create the sales table in the database."""
@@ -100,8 +103,9 @@ def populate_initial_data(session, channel, queue_name='common_queue'):
             print(f"Error inserting data: {e}")
 
 
-def insert_data(session, data):
+def insert_data(Session, data):
     """Inserting new data to the table"""
+    session = Session()
     try:
         command = text("""
         INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
@@ -113,8 +117,9 @@ def insert_data(session, data):
         session.rollback()
         print(f"Error inserting data: {e}")
 
-def get_data(session):
+def get_data(Session):
     """Getting all data from the table"""
+    session = Session()
     try:
         command = text("SELECT * FROM sales")
         result = session.execute(command)

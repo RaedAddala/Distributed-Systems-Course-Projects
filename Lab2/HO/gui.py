@@ -1,5 +1,9 @@
 from PyQt5.QtWidgets import QMainWindow, QTextEdit, QVBoxLayout, QWidget
 from common.rabbitmq import setup_common_queue, receive_messages
+from PyQt5.QtCore import pyqtSignal, QObject
+
+class Worker(QObject):
+    message_received = pyqtSignal(str)  # Custom signal to handle string messages // to prevent race conditions when working with threads
 
 class MainWindow(QMainWindow):
     def __init__(self, session, channel,title):
@@ -7,6 +11,9 @@ class MainWindow(QMainWindow):
         self.session = session
         self.channel = channel
         self.title = title
+        self.worker = Worker()  # Worker object to handle background tasks
+        self.worker.message_received.connect(self.update_display)  # Connect signal to slot
+        
         self.initUI()
 
     def initUI(self):
@@ -24,7 +31,7 @@ class MainWindow(QMainWindow):
         # Setup RabbitMQ listening for incoming data
         try:
             setup_common_queue(self.channel, 'common_queue')
-            receive_messages(self.channel, 'common_queue', self.session, self.update_display)
+            receive_messages(self.channel, 'common_queue', self.session, self.worker.message_received.emit)
         except Exception as err:
             print(f"Error setting up RabbitMQ in GUI: {err}")
 
