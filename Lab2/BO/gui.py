@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QTextEdit, QVBoxLayout, QWidget, QPushB
 from PyQt5.QtCore import QDate, pyqtSignal, QObject
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from common.database import insert_data
-from common.rabbitmq import send_message, setup_common_queue, receive_messages
+from common.rabbitmq import send_message, setup_common_exchange, receive_messages
 import random
 
 class Worker(QObject):
@@ -78,8 +78,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.text_display)
 
         # Setup RabbitMQ listening for incoming data
-        setup_common_queue(self.channel, 'common_queue')
-        receive_messages(self.channel, 'common_queue', self.session, self.worker.message_received.emit)
+        setup_common_exchange(self.channel, 'common_exchange')
+        receive_messages(self.channel, 'common_exchange', self.session, self.worker.message_received.emit)
 
 
     def fill_random_data(self):
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
             'Tax': float(self.tax_edit.text()),
             'Total': float(self.total_edit.text())
         }
-        send_message(self.channel, 'common_queue', data)
+        send_message(self.channel, 'common_exchange', data)
         insert_data(self.session, data)
         self.update_display(f"Sent data: {data}")
 

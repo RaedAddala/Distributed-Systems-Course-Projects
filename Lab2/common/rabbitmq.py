@@ -15,33 +15,36 @@ def create_connection():
         print(f"Failed to create a RabbitMQ connection: {e}")
         return None, None
 
-def setup_common_queue(channel, queue_name='common_queue'):
-    """Declare a common queue for all messages."""
+def setup_common_exchange(channel, exchange_name='common_exchange'):
+    """Declare a common fanout exchange for all messages."""
     try:
-        channel.queue_declare(queue=queue_name, durable=True)
+        channel.exchange_declare(exchange=exchange_name, exchange_type='fanout', durable=True)
     except AMQPError as e:
-        print(f"Failed to declare common queue {queue_name}: {e}")
+        print(f"Failed to declare common exchange {exchange_name}: {e}")
 
-def send_message(channel, queue_name, data):
-    """Send a message to the specified queue."""
+def send_message(channel, exchange_name, data):
+    """Send a message to the specified exchange."""
     try:
         message = json.dumps(data)
         channel.basic_publish(
-            exchange='',
-            routing_key=queue_name,
+            exchange=exchange_name,
+            routing_key='',  # Not used with fanout exchange
             body=message,
             properties=pika.BasicProperties(delivery_mode=2))  # Make message persistent
         print("Message sent successfully.")
     except AMQPError as e:
-        print(f"Failed to send message to {queue_name}: {e}")
+        print(f"Failed to send message to exchange {exchange_name}: {e}")
 
+def receive_messages(channel, exchange_name, session, update_gui_callback):
+    """Start consuming messages from a specified exchange and handle data in a separate thread."""
+    # Each consumer needs its own queue, which gets messages from the exchange
+    result = channel.queue_declare('', exclusive=True)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange=exchange_name, queue=queue_name)
 
-def receive_messages(channel, queue_name, session, update_gui_callback):
-    """Start consuming messages from a specified queue and handle data in a separate thread."""
     def callback(ch, method, properties, body):
         try:
-            # Insert the data into the database
-            message = process_message(session,body)
+            message = process_message(session, body)
             update_gui_callback(message)  # Update the GUI with the processed data
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON: {e}")
@@ -55,14 +58,13 @@ def receive_messages(channel, queue_name, session, update_gui_callback):
             channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
             channel.start_consuming()
         except AMQPError as e:
-            print(f"Failed to receive messages from {queue_name}: {e}")
+            print(f"Failed to receive messages from {exchange_name}: {e}")
 
-    # Start the consuming process in a separate thread to prevent blocking the main GUI thread
+    # Use a separate thread to not block the main GUI thread
     thread = threading.Thread(target=start_consuming)
-    thread.daemon = True  # Daemonize thread to close when the main program exits
+    thread.daemon = True
     thread.start()
-    
-            
+
 def insert_data(session, **data):
     try:
         command = text("""

@@ -70,7 +70,7 @@ def create_tables(session):
         print(f"Error creating tables: {e}")
         session.rollback()
 
-def populate_initial_data(session, channel, queue_name='common_queue'):
+def populate_initial_data(session, channel, exchange_name='common_exchange'):
     """Populate the sales table with random initial data."""
     products = [('Paper', 12.95), ('Pens', 2.19), ('Staples', 5.00)]
     for _ in range(10):
@@ -97,7 +97,7 @@ def populate_initial_data(session, channel, queue_name='common_queue'):
                 text("INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)"),
                 data)
             session.commit()
-            send_message(channel, queue_name, data)
+            send_message(channel, exchange_name, data)
         except SQLAlchemyError as e:
             session.rollback()
             print(f"Error inserting data: {e}")

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QMainWindow, QTextEdit, QVBoxLayout, QWidget
-from common.rabbitmq import setup_common_queue, receive_messages
+from common.rabbitmq import setup_common_exchange, receive_messages
 from PyQt5.QtCore import pyqtSignal, QObject
 
 class Worker(QObject):
@@ -30,8 +30,8 @@ class MainWindow(QMainWindow):
         
         # Setup RabbitMQ listening for incoming data
         try:
-            setup_common_queue(self.channel, 'common_queue')
-            receive_messages(self.channel, 'common_queue', self.session, self.worker.message_received.emit)
+            setup_common_exchange(self.channel, 'common_exchange')
+            receive_messages(self.channel, 'common_exchange', self.session, self.worker.message_received.emit)
         except Exception as err:
             print(f"Error setting up RabbitMQ in GUI: {err}")
 
