@@ -1,8 +1,14 @@
+import sys
+
+sys.path.insert(0, '.')
+
 import random
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+
+from common.rabbitmq import send_message
 
 import uuid
 
@@ -26,9 +32,8 @@ def initialize_database():
         return None, None, None
     try:
         create_tables(session)
-        populate_initial_data(session)
     except SQLAlchemyError as e:
-        print(f"Error during table creation or data population: {e}")
+        print(f"Error during table creation: {e}")
         session.rollback()
         session.close()
         engine.dispose()
@@ -62,7 +67,7 @@ def create_tables(session):
         print(f"Error creating tables: {e}")
         session.rollback()
 
-def populate_initial_data(session):
+def populate_initial_data(session, channel, queue_name='common_queue'):
     """Populate the sales table with random initial data."""
     products = [('Paper', 12.95), ('Pens', 2.19), ('Staples', 5.00)]
     for _ in range(10):
@@ -74,24 +79,35 @@ def populate_initial_data(session):
         amount = round(cost * qty, 2)
         tax = round(amount * 0.07, 2)
         total = round(amount + tax, 2)
+        data = {
+            'Date': date, 
+            'Region': region, 
+            'Product': product, 
+            'Qty': qty, 
+            'Cost': cost, 
+            'Amount': amount, 
+            'Tax': tax, 
+            'Total': total
+        }
         try:
             session.execute(
-                text("INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:date, :region, :product, :qty, :cost, :amount, :tax, :total)"),
-                {'date': date, 'region': region, 'product': product, 'qty': qty, 'cost': cost, 'amount': amount, 'tax': tax, 'total': total})
+                text("INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total) VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)"),
+                data)
             session.commit()
+            send_message(channel, queue_name, data)
         except SQLAlchemyError as e:
             session.rollback()
             print(f"Error inserting data: {e}")
 
 
-def insert_data(session, date, region, product, qty, cost, amount, tax, total):
+def insert_data(session, data):
     """Inserting new data to the table"""
     try:
         command = text("""
         INSERT INTO sales (Date, Region, Product, Qty, Cost, Amount, Tax, Total)
         VALUES (:Date, :Region, :Product, :Qty, :Cost, :Amount, :Tax, :Total)
         """)
-        session.execute(command,{'date': date, 'region': region, 'product': product, 'qty': qty, 'cost': cost, 'amount': amount, 'tax': tax, 'total': total})
+        session.execute(command,data)
         session.commit()
     except SQLAlchemyError as e:
         session.rollback()

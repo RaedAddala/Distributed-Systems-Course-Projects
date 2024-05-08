@@ -9,6 +9,17 @@ from common.rabbitmq import create_connection, close_connection
 
 def main():
     app = QApplication(sys.argv)
+    
+    try:
+        connection, channel = create_connection()
+    except Exception as err:
+        print(f"Error establishing RabbitMQ connection: {err}")
+        sys.exit(-1)
+    
+    if not connection or not channel:
+        print("Failed to establish RabbitMQ connection.")
+        sys.exit(-1)
+    
     try:
         db_name, engine, session = initialize_database()
     except Exception as err:
@@ -20,17 +31,7 @@ def main():
         sys.exit(-1)
 
     try:
-        connection, channel = create_connection()
-    except Exception as err:
-        print(f"Error establishing RabbitMQ connection: {err}")
-        sys.exit(-1)
-    
-    if not connection or not channel:
-        print("Failed to establish RabbitMQ connection.")
-        sys.exit(-1)
-
-    try:
-        window = MainWindow(session, channel, f"Base Office - {db_name}")
+        window = MainWindow(session, channel, f"Branch Office - {db_name}")
         window.show()
     except Exception as err:
         print(f"Error during GUI initialization: {err}")

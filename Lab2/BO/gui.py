@@ -3,6 +3,7 @@ from PyQt5.QtCore import QDate
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from common.database import insert_data
 from common.rabbitmq import send_message, setup_common_queue, receive_messages
+import random
 
 class MainWindow(QMainWindow):
     def __init__(self, session, channel, title):
@@ -52,14 +53,16 @@ class MainWindow(QMainWindow):
         self.total_edit.setValidator(QDoubleValidator(0.01, 1000000.0, 2))
         form_layout.addRow('Total:', self.total_edit)
 
+        # Buttons for actions
+        self.fill_random_button = QPushButton('Fill Random Values', self)
+        self.fill_random_button.clicked.connect(self.fill_random_data)
+        form_layout.addRow(self.fill_random_button)
+        
         # Submit and Send buttons
-        self.submit_button = QPushButton('Submit Data & Send Updates', self)
+        self.submit_button = QPushButton('Save Data & Send Updates', self)
         self.submit_button.clicked.connect(self.send_updates)
         form_layout.addRow(self.submit_button)
 
-        # self.send_button = QPushButton('Send Updates', self)
-        # self.send_button.clicked.connect(self.send_updates)
-        # form_layout.addRow(self.send_button)
 
         layout.addLayout(form_layout)
 
@@ -72,7 +75,28 @@ class MainWindow(QMainWindow):
         setup_common_queue(self.channel, 'common_queue')
         receive_messages(self.channel, 'common_queue', self.session, self.update_display)
 
-    def submit_data(self):
+
+    def fill_random_data(self):
+        products = [('Paper', 12.95), ('Pens', 2.19), ('Staples', 5.00)]
+        date = f"2024-04-{random.randint(1, 30):02d}"
+        region = random.choice(['East', 'West', 'North', 'South'])
+        product, base_price = random.choice(products)
+        qty = random.randint(1, 100)
+        cost = round(base_price * random.uniform(0.95, 1.05), 2)
+        amount = round(cost * qty, 2)
+        tax = round(amount * 0.07, 2)
+        total = round(amount + tax, 2)
+
+        self.date_edit.setDate(QDate.fromString(date, "yyyy-MM-dd"))
+        self.region_edit.setText(region)
+        self.product_edit.setText(product)
+        self.qty_edit.setText(str(qty))
+        self.cost_edit.setText(f"{cost:.2f}")
+        self.amount_edit.setText(f"{amount:.2f}")
+        self.tax_edit.setText(f"{tax:.2f}")
+        self.total_edit.setText(f"{total:.2f}")
+        
+    def send_updates(self):
         data = {
             'Date': self.date_edit.date().toString("yyyy-MM-dd"),
             'Region': self.region_edit.text(),
@@ -83,22 +107,8 @@ class MainWindow(QMainWindow):
             'Tax': float(self.tax_edit.text()),
             'Total': float(self.total_edit.text())
         }
-        insert_data(self.session, **data)
-        self.update_display(f"Inserted data: {data}")
-
-    def send_updates(self):
-        data = {
-            'date': self.date_edit.date().toString("yyyy-MM-dd"),
-            'region': self.region_edit.text(),
-            'product': self.product_edit.text(),
-            'qty': int(self.qty_edit.text()),
-            'cost': float(self.cost_edit.text()),
-            'amount': float(self.amount_edit.text()),
-            'tax': float(self.tax_edit.text()),
-            'total': float(self.total_edit.text())
-        }
         send_message(self.channel, 'common_queue', data)
-        insert_data(self.session, **data)
+        insert_data(self.session, data)
         self.update_display(f"Sent data: {data}")
 
     def update_display(self, message):
