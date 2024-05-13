@@ -1,5 +1,7 @@
 # Distributed Systems Course Labs Projects
 
-Each folder contains my work on the lab.
+Each folder contains my work in the lab.
 
-In these labs, we used RabbitMQ as a message queue system. I coded the first lab using python, the other two using java.
+We develop Distributed Systems by leveraging Message Queues Brokers as a middleware for communication between nodes.
+
+In these Labs, I used **RabbitMQ** an in-memory message queue broker and **python**. GUIs were developed with **pyQT**.
