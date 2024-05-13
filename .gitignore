@@ -73,3 +73,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# ignore anything related to IDE
+*/.vscode
+*/.idea
