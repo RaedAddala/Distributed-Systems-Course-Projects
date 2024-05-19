@@ -15,9 +15,8 @@ services:
   producer:
     build: message_producer
     depends_on:
-        - rabbit_mq:
-            condition: service_healthy
-            
+        - rabbit_mq
+        
     environment:
         AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
         QUEUE_NAME: 'Hello World'
@@ -32,8 +31,7 @@ services:
   consumer1:
     build: message_consumer
     depends_on:
-        - rabbit_mq:
-            condition: service_healthy
+        - rabbit_mq
 
     environment:
         AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
@@ -43,9 +41,7 @@ services:
   consumer2:
     build: message_consumer
     depends_on:
-        - rabbit_mq:
-            condition: service_healthy
-
+        - rabbit_mq
     environment:
         AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
         QUEUE_NAME: 'Hello World'

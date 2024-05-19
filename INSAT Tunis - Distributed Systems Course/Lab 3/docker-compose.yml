@@ -1,0 +1,41 @@
+services:
+  rabbit_mq:
+    # rabbitmq image with web interface enabled through port 15672
+    # on the alpine linux (small kernel compared to the other versions)
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbit_mq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - data:/usr/share/rabbitmq/data
+
+  # TODO Finish These:
+
+  producer:
+    build: reader
+    depends_on:
+      - rabbit_mq
+
+    environment:
+      AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
+      QUEUE_NAME: 'FINISH ME!!'
+    volumes:
+      - ./reader:/usr/src/app/reader
+
+  # TODO Finish These:
+
+  consumer1:
+    build: writer
+    depends_on:
+      - rabbit_mq
+
+    environment:
+      AMQP_URL: 'amqp://rabbit_mq?connection_attempts=10&retry_delay=10'
+      QUEUE_NAME: 'FINISH ME!!'
+    volumes:
+      - ./writer:/usr/src/app/writer
+
+volumes:
+  data:
+    driver: local
