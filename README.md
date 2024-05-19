@@ -1,7 +1,15 @@
 # Distributed Systems Course Labs Projects
 
-Each folder contains my work in the lab.
+This was only for my University Distributed Systems Course Labs.
 
-We develop Distributed Systems by leveraging Message Queues Brokers as a middleware for communication between nodes.
+Distributed Systems are so intriguing. So, I decided to further study the subject and work on other projects. From now on, I will upload more projects as well as the labs that were my reference.
 
-In these Labs, I used **RabbitMQ** an in-memory message queue broker and **python**. GUIs were developed with **pyQT**.
+Most of the distributed systems projects were given in Golang. So I would most likely shift to using it instead of my Python.
+
+My personal projects would be either in Erlang/Elixir, C++, Python or Golang. For the fun of it, I may try Scala.
+
+## Repository Structure
+
+Each folder regroups a certain course labs. Within each of these folders, there is a list of lab folders containing the demanded work as well as my solution.
+
+I always dockerize my work so I don't need to worry about downloading dependencies in the future when testing an old project.
