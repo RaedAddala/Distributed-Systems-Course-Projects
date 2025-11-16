@@ -1,15 +1,25 @@
-# Distributed Systems Course Labs Projects
+# Distributed Systems - Course Labs & Personal Projects
 
-This was only for my University Distributed Systems Course Labs.
+This repository began as a collection of lab assignments from my university's Distributed Systems course. Over time, my interest in distributed systems has grown, so I decided to continue expanding this repo with new personal projects, experiments, and re-implementations.
 
-Distributed Systems are so intriguing. So, I decided to further study the subject and work on other projects. From now on, I will upload more projects as well as the labs that were my reference.
+You will find both the original course labs (with my solutions) and additional projects that dive deeper into various distributed systems concepts.
 
-Most of the distributed systems projects were given in Golang. So I would most likely shift to using it instead of my Python.
+## Technologies
 
-My personal projects would be either in Erlang/Elixir, C++, Python or Golang. For the fun of it, I may try Scala.
+My personal projects may use a variety of languages and tools, depending on what I want to explore at the moment. These may include:
+
+* **Golang**
+* **Python**
+* **Erlang/Elixir**
+* **C++**
+* **Scala**
 
 ## Repository Structure
 
-Each folder regroups a certain course labs. Within each of these folders, there is a list of lab folders containing the demanded work as well as my solution.
+The repository is organized by course.
+Each course folder contains:
 
-I always dockerize my work so I don't need to worry about downloading dependencies in the future when testing an old project.
+* A set of **lab directories**, each with the required work and my solution.
+* Additional **personal projects** that expand on distributed systems topics.
+
+All projects are **containerized with Docker**, so dependencies are automatically handled. This makes older projects easy to run without worrying about environment setup.
